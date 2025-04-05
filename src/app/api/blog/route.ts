@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConnectDB } from "../../../../lib/config/db";
-import { writeFile } from "fs/promises";
 import BlogModel from "../../../../lib/models/blogModel";
+import mongoose from "mongoose";
 const fs = require("fs")
 
 // API Endpoint to get all blogs
@@ -76,11 +76,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
 
 
+
 export async function DELETE(req: NextRequest) {
   try {
     const id = req.nextUrl.searchParams.get("id");
+
     if (!id) {
       return NextResponse.json({ msg: "ID is required" }, { status: 400 });
+    }
+
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ msg: "Invalid blog ID" }, { status: 400 });
     }
 
     // Find the blog by ID
@@ -90,16 +97,22 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Delete the image associated with the blog
-    await fs.promises.unlink(`./public${blog.image}`);
-    
+    try {
+      const imagePath = `./public${blog.image}`;
+      if (fs.existsSync(imagePath)) {
+        await fs.promises.unlink(imagePath);
+      }
+    } catch (imgErr) {
+      console.warn("Failed to delete image:", imgErr);
+    }
+
     // Delete the blog from the database
     await BlogModel.findByIdAndDelete(id);
 
-    // Return success response
-    return NextResponse.json({ msg: "Blog deleted successfully" });
+    return NextResponse.json({ msg: "Blog deleted successfully" }, { status: 200 });
+
   } catch (error) {
-    // Handle errors
-    console.error(error);
-    return NextResponse.json({ msg: "Something went wrong" }, { status: 500 });
+    console.error("DELETE handler error:", error);
+    return NextResponse.json({ msg: "Something went wrong", error }, { status: 500 });
   }
 }
