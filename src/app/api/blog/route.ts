@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConnectDB } from "../../../../lib/config/db";
-import BlogModel from "../../../../lib/models/blogModel";
+import { writeFile } from "fs/promises";
 import mongoose from "mongoose";
+import BlogModel from "../../../../lib/models/blogModel";
 const fs = require("fs")
 
 // API Endpoint to get all blogs
@@ -28,7 +29,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 }
 
 // API Endpoint for Uploading Blogs
-
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const formData = await req.formData();
@@ -40,10 +40,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await ConnectDB(); // Ensure DB connection before saving
 
-    // ✅ Temporarily use a dummy image path (you'll replace this with Cloudinary URL later)
-    const imgURL = "/dummy.jpg";
+    const timeStamp = Date.now();
+    const imageByteData = await image.arrayBuffer();
+    const buffer = Buffer.from(imageByteData);
 
-    // ✅ Validate required fields
+    const imageName = `${timeStamp}_${image.name}`;
+    const path = `./public/${imageName}`;
+    await writeFile(path, buffer);
+
+    const imgURL = `/${imageName}`; // Corrected image URL assignment
+
+    // Validate required fields
     const requiredFields = ["title", "description", "category", "author", "authorImg"];
     for (const field of requiredFields) {
       if (!formData.get(field)) {
@@ -51,30 +58,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // ✅ Construct blog data
+    // Construct blog data properly
     const BlogData = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       category: formData.get("category") as string,
       author: formData.get("author") as string,
-      image: imgURL, // ✅ using dummy path
+      image: imgURL, // Corrected
       authorImg: formData.get("authorImg") as string,
     };
 
     await BlogModel.create(BlogData);
-    console.log("✅ Blog saved successfully");
+    console.log("Blog saved successfully");
 
     return NextResponse.json({ success: true, msg: "Blog added" }, { status: 201 });
   } catch (error) {
-    console.error("❌ Error in POST request:", error);
+    console.error("Error in POST request:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
 
 //creating api endpiont to delete the blog
-
-
 
 
 export async function DELETE(req: NextRequest) {
