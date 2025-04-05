@@ -12,27 +12,30 @@ interface Iparams {
   };
 }
 
+async function fetchBlog(id: string) {
+  try {
+    const result = await axios.get("/api/blog", {
+      params: { id } // Pass the blog ID to fetch a specific blog
+    });
+    return result.data.blog; // Return the fetched blog data
+  } catch (error) {
+    console.error("Error fetching blog data:", error);
+    return null; // Return null if an error occurs
+  }
+}
+
 function Page({ params }: Iparams) {
   const [data, setData] = useState<any>(null); // State to store blog data
 
-  // Function to fetch blog data from API
-  const fetchBlog = async () => {
-    try {
-      const result = await axios.get("/api/blog", {
-        params: {
-          id: params.id, // Pass the blog ID to fetch a specific blog
-        },
-      });
-      setData(result.data.blog); // Set the fetched blog data into state
-    } catch (error) {
-      console.error("Error fetching blog data:", error);
-    }
-  };
-
   // Fetch blog data whenever the component mounts or params.id changes
   useEffect(() => {
-    fetchBlog();
-  }, [params.id]);
+    const fetchData = async () => {
+      const blogData = await fetchBlog(params.id); // Fetch blog data with the provided id
+      setData(blogData); // Set the fetched blog data into state
+    };
+    
+    fetchData();
+  }, [params.id]); // Run whenever params.id changes
 
   // If data is not yet available, show loading message
   if (!data) {
