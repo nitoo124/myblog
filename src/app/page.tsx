@@ -11,7 +11,6 @@ function page() {
     <ToastContainer theme='dark'/>
    <Header/>
    <BlogList/>
-   <Footer/>
   </main>
   )
 }
