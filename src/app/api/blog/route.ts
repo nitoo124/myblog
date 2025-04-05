@@ -28,6 +28,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 }
 
 // API Endpoint for Uploading Blogs
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const formData = await req.formData();
@@ -39,17 +40,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await ConnectDB(); // Ensure DB connection before saving
 
-    const timeStamp = Date.now();
-    const imageByteData = await image.arrayBuffer();
-    const buffer = Buffer.from(imageByteData);
+    // ✅ Temporarily use a dummy image path (you'll replace this with Cloudinary URL later)
+    const imgURL = "/dummy.jpg";
 
-    const imageName = `${timeStamp}_${image.name}`;
-    const path = `./public/${imageName}`;
-    await writeFile(path, buffer);
-
-    const imgURL = `/${imageName}`; // Corrected image URL assignment
-
-    // Validate required fields
+    // ✅ Validate required fields
     const requiredFields = ["title", "description", "category", "author", "authorImg"];
     for (const field of requiredFields) {
       if (!formData.get(field)) {
@@ -57,22 +51,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // Construct blog data properly
+    // ✅ Construct blog data
     const BlogData = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       category: formData.get("category") as string,
       author: formData.get("author") as string,
-      image: imgURL, // Corrected
+      image: imgURL, // ✅ using dummy path
       authorImg: formData.get("authorImg") as string,
     };
 
     await BlogModel.create(BlogData);
-    console.log("Blog saved successfully");
+    console.log("✅ Blog saved successfully");
 
     return NextResponse.json({ success: true, msg: "Blog added" }, { status: 201 });
   } catch (error) {
-    console.error("Error in POST request:", error);
+    console.error("❌ Error in POST request:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
