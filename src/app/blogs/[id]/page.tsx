@@ -5,39 +5,40 @@ import { FaFacebookF } from "react-icons/fa";
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useParams } from 'next/navigation';
 
-interface Iparams {
-  params: {
-    id: string;
+interface BlogData {
+  title: string;
+  authorImg: string;
+  author: string;
+  category: string;
+  image: string;
+  description: string;
+}
+
+export default function BlogPage() {
+  const params = useParams();
+  const [data, setData] = useState<BlogData | null>(null);
+
+  const fetchBlog = async () => {
+    try {
+      const result = await axios.get("/api/blog", {
+        params: {
+          id: params.id,
+        },
+      });
+      setData(result.data.blog);
+    } catch (error) {
+      console.error("Error fetching blog data:", error);
+    }
   };
-}
 
-async function fetchBlog(id: string) {
-  try {
-    const result = await axios.get("/api/blog", {
-      params: { id } // Pass the blog ID to fetch a specific blog
-    });
-    return result.data.blog; // Return the fetched blog data
-  } catch (error) {
-    console.error("Error fetching blog data:", error);
-    return null; // Return null if an error occurs
-  }
-}
-
-function Page({ params }: Iparams) {
-  const [data, setData] = useState<any>(null); // State to store blog data
-
-  // Fetch blog data whenever the component mounts or params.id changes
   useEffect(() => {
-    const fetchData = async () => {
-      const blogData = await fetchBlog(params.id); // Fetch blog data with the provided id
-      setData(blogData); // Set the fetched blog data into state
-    };
-    
-    fetchData();
-  }, [params.id]); // Run whenever params.id changes
+    if (params?.id) {
+      fetchBlog();
+    }
+  }, [params?.id]);
 
-  // If data is not yet available, show loading message
   if (!data) {
     return <div>Loading...</div>;
   }
@@ -48,7 +49,7 @@ function Page({ params }: Iparams) {
         <div className="flex justify-between items-center">
           <div className="relative">
             <Image
-              src="/logo.png" // Display logo
+              src="/logo.png"
               alt="logo"
               width={100}
               height={100}
@@ -56,19 +57,16 @@ function Page({ params }: Iparams) {
             />
             <h2 className="absolute top-7 left-[69px] text-2xl font-bold">log.</h2>
           </div>
-          {/* Button */}
           <button className="border border-black border-solid sm:px-6 sm:py-3 py-1 font-medium flex items-center gap-2 shadow-[-7px_7px_0px_black]">
             Get started
             <FaLongArrowAltRight className="text-xl" />
           </button>
         </div>
 
-        {/* Blog Content */}
         <div className="my-24 text-center">
           <h1 className="text-3xl sm:text-5xl font-semibold max-w-[700px] mx-auto">{data.title}</h1>
-          {/* Author Image */}
           <Image
-            src={data.authorImg} // Use author image URL from API
+            src={data.authorImg}
             alt={data.author}
             width={120}
             height={120}
@@ -78,19 +76,16 @@ function Page({ params }: Iparams) {
         </div>
       </div>
 
-      {/* Blog Image and Description */}
       <div className="mx-5 max-w-[800px] md:mx-auto mt-[-100px] mb-10">
         <Image
-          src={data.image} // Use blog image URL from API
+          src={data.image}
           alt={data.title}
           width={1280}
           height={720}
         />
         <h1 className="py-8 text-[26px] font-semibold">Introduction:</h1>
-        {/* description */}
-        <div className="blog-content" dangerouslySetInnerHTML={{ __html: data.description }}></div>
+        <div className='blog-content' dangerouslySetInnerHTML={{__html: data.description}}></div>
 
-        {/* Social Media Sharing Section */}
         <div className="my-24">
           <p className="text-black font-semibold my-4">Share this article on social media</p>
           <div className="flex gap-2">
@@ -103,5 +98,3 @@ function Page({ params }: Iparams) {
     </>
   );
 }
-
-export default Page;
