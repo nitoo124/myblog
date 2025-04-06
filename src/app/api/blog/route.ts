@@ -49,7 +49,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // ✅ Cloudinary Upload
     const uploadResponse = await axios.post(
-      "https://api.cloudinary.com/v1_1/cloude_name /image/upload",
+      "https://api.cloudinary.com/v1_1/dmufeaj9t/image/upload",
       {
         file: dataUrl,
         upload_preset: "my-blog-app",
