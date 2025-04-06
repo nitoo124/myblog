@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConnectDB } from "../../../../lib/config/db";
-import { writeFile } from "fs/promises";
 import mongoose from "mongoose";
 import BlogModel from "../../../../lib/models/blogModel";
 import axios from "axios";
@@ -30,7 +29,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 }
 
 // API Endpoint for Uploading Blogs
-
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const formData = await req.formData();
@@ -42,20 +40,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await ConnectDB();
 
-    // ✅ Upload image to Cloudinary
-    const buffer = Buffer.from(await image.arrayBuffer());
+    const imageByteData = await image.arrayBuffer();
+    const buffer = Buffer.from(imageByteData);
     const base64 = buffer.toString("base64");
     const dataUrl = `data:${image.type};base64,${base64}`;
 
-    const cloudRes = await axios.post(
-      `https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload`,
+    // ✅ Cloudinary Upload
+    const uploadResponse = await axios.post(
+      "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload",
       {
         file: dataUrl,
         upload_preset: "YOUR_UPLOAD_PRESET",
       }
     );
 
-    const imgURL = cloudRes.data.secure_url;
+    const imgURL = uploadResponse.data.secure_url;
 
     const requiredFields = ["title", "description", "category", "author", "authorImg"];
     for (const field of requiredFields) {
@@ -82,8 +81,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-
-
 //creating api endpiont to delete the blog
 
 
