@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConnectDB } from "../../../../lib/config/db";
-import { writeFile } from "fs/promises";
+import { uploadImage } from "../../../../lib/cloudinary";
 import mongoose from "mongoose";
 import BlogModel from "../../../../lib/models/blogModel";
 const fs = require("fs")
@@ -30,6 +30,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
 // API Endpoint for Uploading Blogs
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  await ConnectDB();
+
   try {
     const formData = await req.formData();
     const image = formData.get("image") as File;
@@ -38,17 +40,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "No image uploaded" }, { status: 400 });
     }
 
-    await ConnectDB(); // Ensure DB connection before saving
-
-    const timeStamp = Date.now();
-    const imageByteData = await image.arrayBuffer();
-    const buffer = Buffer.from(imageByteData);
-
-    const imageName = `${timeStamp}_${image.name}`;
-    const path = `./public/${imageName}`;
-    await writeFile(path, buffer);
-
-    const imgURL = `/${imageName}`; // Corrected image URL assignment
+    // Upload image to Cloudinary
+    const uploadedImage: any = await uploadImage(image);
 
     // Validate required fields
     const requiredFields = ["title", "description", "category", "author", "authorImg"];
@@ -58,26 +51,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // Construct blog data properly
+    // Construct blog data with Cloudinary URL
     const BlogData = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       category: formData.get("category") as string,
       author: formData.get("author") as string,
-      image: imgURL, // Corrected
+      image: uploadedImage.secure_url,
+      imagePublicId: uploadedImage.public_id, // Store public_id for deletion
       authorImg: formData.get("authorImg") as string,
     };
 
     await BlogModel.create(BlogData);
-    console.log("Blog saved successfully");
-
     return NextResponse.json({ success: true, msg: "Blog added" }, { status: 201 });
   } catch (error) {
     console.error("Error in POST request:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-
 
 //creating api endpiont to delete the blog
 
