@@ -5,6 +5,8 @@ import BlogModel from "../../../../lib/models/blogModel";
 import axios from "axios";
 const fs = require("fs")
 
+
+ const cloude_name = process.env.Cloude_Name
 // API Endpoint to get all blogs
 export async function GET(req: NextRequest): Promise<NextResponse> {
   await ConnectDB();
@@ -47,10 +49,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // ✅ Cloudinary Upload
     const uploadResponse = await axios.post(
-      "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload",
+      "https://api.cloudinary.com/v1_1/cloude_name /image/upload",
       {
         file: dataUrl,
-        upload_preset: "YOUR_UPLOAD_PRESET",
+        upload_preset: "my-blog-app",
       }
     );
 
