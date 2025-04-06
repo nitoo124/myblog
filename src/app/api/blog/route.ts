@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConnectDB } from "../../../../lib/config/db";
+import { writeFile } from "fs/promises";
 import mongoose from "mongoose";
 import BlogModel from "../../../../lib/models/blogModel";
 import axios from "axios";
 const fs = require("fs")
 
-
- const cloude_name = process.env.Cloude_Name
 // API Endpoint to get all blogs
 export async function GET(req: NextRequest): Promise<NextResponse> {
   await ConnectDB();
@@ -31,6 +30,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 }
 
 // API Endpoint for Uploading Blogs
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const formData = await req.formData();
@@ -42,21 +42,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await ConnectDB();
 
-    const imageByteData = await image.arrayBuffer();
-    const buffer = Buffer.from(imageByteData);
-    const base64 = buffer.toString("base64");
-    const dataUrl = `data:${image.type};base64,${base64}`;
+    // Convert to base64
+    const imageBytes = await image.arrayBuffer();
+    const buffer = Buffer.from(imageBytes);
+    const base64Image = `data:${image.type};base64,${buffer.toString("base64")}`;
 
-    // ✅ Cloudinary Upload
-    const uploadResponse = await axios.post(
-      "https://api.cloudinary.com/v1_1/dmufeaj9t/image/upload",
+    // Upload to Cloudinary
+    const cloudRes = await axios.post(
+      `https://api.cloudinary.com/v1_1/${process.env.CLOUD_NAME}/image/upload`,
       {
-        file: dataUrl,
-        upload_preset: "my-blog-app",
+        file: base64Image,
+        upload_preset: process.env.UPLOAD_PRESET,
       }
     );
 
-    const imgURL = uploadResponse.data.secure_url;
+    const imageUrl = cloudRes.data.secure_url;
 
     const requiredFields = ["title", "description", "category", "author", "authorImg"];
     for (const field of requiredFields) {
@@ -70,19 +70,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       description: formData.get("description") as string,
       category: formData.get("category") as string,
       author: formData.get("author") as string,
-      image: imgURL,
+      image: imageUrl, // ✅ Now hosted on Cloudinary
       authorImg: formData.get("authorImg") as string,
     };
 
     await BlogModel.create(BlogData);
-    console.log("✅ Blog saved successfully");
 
     return NextResponse.json({ success: true, msg: "Blog added" }, { status: 201 });
   } catch (error) {
-    console.error("❌ Error in POST request:", error);
+    console.error("Upload error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+
 //creating api endpiont to delete the blog
 
 
