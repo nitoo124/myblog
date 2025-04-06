@@ -3,8 +3,6 @@ import { ConnectDB } from "../../../../lib/config/db";
 import { writeFile } from "fs/promises";
 import mongoose from "mongoose";
 import BlogModel from "../../../../lib/models/blogModel";
-import { put } from '@vercel/blob';
-
 const fs = require("fs")
 
 // API Endpoint to get all blogs
@@ -31,28 +29,52 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 }
 
 // API Endpoint for Uploading Blogs
-
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const formData = await req.formData();
     const image = formData.get("image") as File;
 
-    // Vercel Blob में इमेज अपलोड करें
-    const { url } = await put(image.name, image, {
-      access: 'public',
-    });
+    if (!image) {
+      return NextResponse.json({ error: "No image uploaded" }, { status: 400 });
+    }
 
-    // ब्लॉग डेटा सेव करें
+    await ConnectDB(); // Ensure DB connection before saving
+
+    const timeStamp = Date.now();
+    const imageByteData = await image.arrayBuffer();
+    const buffer = Buffer.from(imageByteData);
+
+    const imageName = `${timeStamp}_${image.name}`;
+    const path = `./public/${imageName}`;
+    await writeFile(path, buffer);
+
+    const imgURL = `/${imageName}`; // Corrected image URL assignment
+
+    // Validate required fields
+    const requiredFields = ["title", "description", "category", "author", "authorImg"];
+    for (const field of requiredFields) {
+      if (!formData.get(field)) {
+        return NextResponse.json({ error: `${field} is required` }, { status: 400 });
+      }
+    }
+
+    // Construct blog data properly
     const BlogData = {
-      // ...अन्य फील्ड
-      image: url, // Vercel Blob URL
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      category: formData.get("category") as string,
+      author: formData.get("author") as string,
+      image: imgURL, // Corrected
+      authorImg: formData.get("authorImg") as string,
     };
 
     await BlogModel.create(BlogData);
-    return NextResponse.json({ success: true });
+    console.log("Blog saved successfully");
+
+    return NextResponse.json({ success: true, msg: "Blog added" }, { status: 201 });
   } catch (error) {
-    console.error("त्रुटि:", error);
-    return NextResponse.json({ error: "सर्वर त्रुटि" }, { status: 500 });
+    console.error("Error in POST request:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
