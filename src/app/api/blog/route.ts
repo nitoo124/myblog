@@ -3,7 +3,8 @@ import { ConnectDB } from "../../../../lib/config/db";
 import { writeFile } from "fs/promises";
 import mongoose from "mongoose";
 import BlogModel from "../../../../lib/models/blogModel";
-import axios from "axios";
+import { put } from '@vercel/blob';
+
 const fs = require("fs")
 
 // API Endpoint to get all blogs
@@ -31,55 +32,27 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
 // API Endpoint for Uploading Blogs
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const image = formData.get("image") as File;
 
-    if (!image) {
-      return NextResponse.json({ error: "No image uploaded" }, { status: 400 });
-    }
+    // Vercel Blob में इमेज अपलोड करें
+    const { url } = await put(image.name, image, {
+      access: 'public',
+    });
 
-    await ConnectDB();
-
-    // Convert to base64
-    const imageBytes = await image.arrayBuffer();
-    const buffer = Buffer.from(imageBytes);
-    const base64Image = `data:${image.type};base64,${buffer.toString("base64")}`;
-
-    // Upload to Cloudinary
-    const cloudRes = await axios.post(
-      `https://api.cloudinary.com/v1_1/${process.env.CLOUD_NAME}/image/upload`,
-      {
-        file: base64Image,
-        upload_preset: process.env.UPLOAD_PRESET,
-      }
-    );
-
-    const imageUrl = cloudRes.data.secure_url;
-
-    const requiredFields = ["title", "description", "category", "author", "authorImg"];
-    for (const field of requiredFields) {
-      if (!formData.get(field)) {
-        return NextResponse.json({ error: `${field} is required` }, { status: 400 });
-      }
-    }
-
+    // ब्लॉग डेटा सेव करें
     const BlogData = {
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-      category: formData.get("category") as string,
-      author: formData.get("author") as string,
-      image: imageUrl, // ✅ Now hosted on Cloudinary
-      authorImg: formData.get("authorImg") as string,
+      // ...अन्य फील्ड
+      image: url, // Vercel Blob URL
     };
 
     await BlogModel.create(BlogData);
-
-    return NextResponse.json({ success: true, msg: "Blog added" }, { status: 201 });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("त्रुटि:", error);
+    return NextResponse.json({ error: "सर्वर त्रुटि" }, { status: 500 });
   }
 }
 
