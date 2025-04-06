@@ -3,6 +3,7 @@ import { ConnectDB } from "../../../../lib/config/db";
 import { writeFile } from "fs/promises";
 import mongoose from "mongoose";
 import BlogModel from "../../../../lib/models/blogModel";
+import axios from "axios";
 const fs = require("fs")
 
 // API Endpoint to get all blogs
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 }
 
 // API Endpoint for Uploading Blogs
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const formData = await req.formData();
@@ -38,12 +40,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "No image uploaded" }, { status: 400 });
     }
 
-    await ConnectDB(); // Ensure DB connection before saving
+    await ConnectDB();
 
-    // ✅ Temporarily use a dummy image path (you'll replace this with Cloudinary URL later)
-    const imgURL = "/dummy.jpg";
+    // ✅ Upload image to Cloudinary
+    const buffer = Buffer.from(await image.arrayBuffer());
+    const base64 = buffer.toString("base64");
+    const dataUrl = `data:${image.type};base64,${base64}`;
 
-    // ✅ Validate required fields
+    const cloudRes = await axios.post(
+      `https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload`,
+      {
+        file: dataUrl,
+        upload_preset: "YOUR_UPLOAD_PRESET",
+      }
+    );
+
+    const imgURL = cloudRes.data.secure_url;
+
     const requiredFields = ["title", "description", "category", "author", "authorImg"];
     for (const field of requiredFields) {
       if (!formData.get(field)) {
@@ -51,13 +64,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // ✅ Construct blog data
     const BlogData = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       category: formData.get("category") as string,
       author: formData.get("author") as string,
-      image: imgURL, // ✅ using dummy path
+      image: imgURL,
       authorImg: formData.get("authorImg") as string,
     };
 
