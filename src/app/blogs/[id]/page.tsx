@@ -65,13 +65,17 @@ export default function BlogPage() {
 
         <div className="my-24 text-center">
           <h1 className="text-3xl sm:text-5xl font-semibold max-w-[700px] mx-auto">{data.title}</h1>
-          <Image
-            src={data.authorImg}
-            alt={data.author}
-            width={120}
-            height={120}
-            className="mx-auto mt-6 border border-white rounded-full"
-          />
+
+          {data.authorImg && (
+            <Image
+              src={data.authorImg}
+              alt={data.author}
+              width={120}
+              height={120}
+              className="mx-auto mt-6 border border-white rounded-full"
+            />
+          )}
+
           <p className="mt-4 text-lg">{data.category}</p>
         </div>
       </div>
@@ -84,7 +88,7 @@ export default function BlogPage() {
           height={720}
         />
         <h1 className="py-8 text-[26px] font-semibold">Introduction:</h1>
-        <div className='blog-content' dangerouslySetInnerHTML={{__html: data.description}}></div>
+        <div className='blog-content' dangerouslySetInnerHTML={{ __html: data.description }}></div>
 
         <div className="my-24">
           <p className="text-black font-semibold my-4">Share this article on social media</p>
