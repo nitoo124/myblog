@@ -19,7 +19,7 @@ function BlogTableItem({ authorImg, author, title, id, date, deleteBlog }: IBlog
         className='items-center gap-3 hidden sm:flex px-6 py-4 font-medium text-gray-900'
       >
         <Image
-          src={authorImg || '/logo.png'}
+          src={'/logo.png'}
           alt='author image'
           width={40}
           height={40}
